@@ -211,7 +211,6 @@ export const AddPatientModal = ({ open, onOpenChange }: AddPatientModalProps) =>
             <Label htmlFor="name">Full Name</Label>
             <Input
               id="name"
-              placeholder="Enter patient name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
@@ -224,7 +223,6 @@ export const AddPatientModal = ({ open, onOpenChange }: AddPatientModalProps) =>
               <Input
                 id="age"
                 type="number"
-                placeholder="Age"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 disabled={loading}
@@ -235,7 +233,7 @@ export const AddPatientModal = ({ open, onOpenChange }: AddPatientModalProps) =>
               <Label htmlFor="gender">Gender</Label>
               <Select value={gender} onValueChange={setGender} disabled={loading}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select" />
+                  <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">Male</SelectItem>
@@ -250,7 +248,6 @@ export const AddPatientModal = ({ open, onOpenChange }: AddPatientModalProps) =>
             <Label htmlFor="condition">Medical Condition</Label>
             <Input
               id="condition"
-              placeholder="e.g., Hypertension, Diabetes"
               value={condition}
               onChange={(e) => setCondition(e.target.value)}
               disabled={loading}

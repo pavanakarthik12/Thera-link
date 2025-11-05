@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AddPatientModal } from "@/components/AddPatientModal";
 import { AddPrescriptionModal } from "@/components/AddPrescriptionModal";
+import { useNavigate } from "react-router-dom";
 
 interface Patient {
   id: string;
@@ -30,6 +31,7 @@ const DoctorInterface = () => {
   const [error, setError] = useState<string | null>(null);
   const [addPatientOpen, setAddPatientOpen] = useState(false);
   const [addPrescriptionOpen, setAddPrescriptionOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch patients from backend
   useEffect(() => {
@@ -90,10 +92,10 @@ const DoctorInterface = () => {
         className="mb-8"
       >
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, Dr. Sarah 👋
+          Doctor Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Here's your patient overview for today
+          Patient overview and management
         </p>
       </motion.div>
 
@@ -289,10 +291,7 @@ const DoctorInterface = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            // Navigate to patient details page
-                            window.location.hash = `/patient/${patient.id}`;
-                          }}
+                          onClick={() => navigate(`/doctor/patient/${patient.id}`)}
                           className="gap-2"
                         >
                           <Eye className="h-4 w-4" />

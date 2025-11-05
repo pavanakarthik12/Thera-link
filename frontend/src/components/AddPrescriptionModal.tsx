@@ -172,7 +172,7 @@ export const AddPrescriptionModal = ({ open, onOpenChange }: AddPrescriptionModa
             <Label htmlFor="patient">Select Patient *</Label>
             <Select value={patient} onValueChange={setPatient} disabled={loading}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose patient" />
+                <SelectValue placeholder="Select a patient" />
               </SelectTrigger>
               <SelectContent>
                 {patients.map((p) => (
@@ -188,7 +188,6 @@ export const AddPrescriptionModal = ({ open, onOpenChange }: AddPrescriptionModa
             <Label htmlFor="medication">Medication Name *</Label>
             <Input
               id="medication"
-              placeholder="e.g., Lisinopril"
               value={medication}
               onChange={(e) => setMedication(e.target.value)}
               disabled={loading}
@@ -200,7 +199,6 @@ export const AddPrescriptionModal = ({ open, onOpenChange }: AddPrescriptionModa
               <Label htmlFor="dosage">Dosage *</Label>
               <Input
                 id="dosage"
-                placeholder="e.g., 10mg"
                 value={dosage}
                 onChange={(e) => setDosage(e.target.value)}
                 disabled={loading}
@@ -212,7 +210,6 @@ export const AddPrescriptionModal = ({ open, onOpenChange }: AddPrescriptionModa
               {customFrequency ? (
                 <Input
                   id="customFrequency"
-                  placeholder="e.g., Twice daily"
                   value={customFrequency}
                   onChange={(e) => setCustomFrequency(e.target.value)}
                   disabled={loading}

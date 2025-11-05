@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from database import supabase
 from utils.response import success_response, error_response
 from utils.adherence import calculate_adherence, count_missed_doses
@@ -72,3 +72,21 @@ async def log_dose(dose_data: DoseLogCreate):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error logging dose: {str(e)}")
+
+# Add endpoint to fetch dose logs by patient ID
+@router.get("/dose_logs/patient/{patient_id}")
+async def get_patient_dose_logs(patient_id: str):
+    """
+    Get all dose logs for a specific patient.
+    """
+    try:
+        # Fetch dose logs for this patient
+        logs_response = supabase.table("dose_logs").select("*").eq("patient_id", patient_id).execute()
+        dose_logs = logs_response.data if logs_response.data else []
+        
+        return success_response(
+            data={"dose_logs": dose_logs},
+            message="Dose logs retrieved successfully"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching dose logs: {str(e)}")
