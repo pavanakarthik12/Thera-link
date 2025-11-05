@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, CheckCircle, XCircle, Clock, Pill } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, XCircle, Clock, Pill, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -239,7 +239,7 @@ const DoctorPatientDetailView = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-muted/30 rounded-lg p-4">
             <p className="text-sm text-muted-foreground">Age</p>
             <p className="font-semibold">{patient.age} years</p>
@@ -251,6 +251,22 @@ const DoctorPatientDetailView = () => {
           <div className="bg-muted/30 rounded-lg p-4">
             <p className="text-sm text-muted-foreground">Condition</p>
             <p className="font-semibold">{patient.condition}</p>
+          </div>
+          <div className="bg-muted/30 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">Patient ID</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-sm">{patient.id.substring(0, 8)}...</p>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(patient.id);
+                  toast.success("Patient ID copied to clipboard");
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </motion.header>

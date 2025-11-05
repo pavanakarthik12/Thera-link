@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { RefreshCw, History, Calendar, Check, X, AlertCircle } from "lucide-react";
+import { RefreshCw, History, Calendar, Check, X, AlertCircle, Clock, Pill } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIMessageCard } from "@/components/AIMessageCard";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
@@ -48,6 +48,44 @@ interface PatientSummary {
   missed_days: Record<string, any>;
 }
 
+// Function to generate medication schedule
+const generateMedicationSchedule = (treatments: Treatment[]) => {
+  const schedule = [];
+  const today = new Date();
+  
+  // For each treatment, generate schedule for the next 7 days
+  for (const treatment of treatments) {
+    const startDate = new Date(treatment.start_date);
+    
+    // Generate schedule for next 7 days
+    for (let i = 0; i < 7; i++) {
+      const scheduleDate = new Date(today);
+      scheduleDate.setDate(today.getDate() + i);
+      
+      // Check if this medication should be taken on this day
+      const dayOfWeek = scheduleDate.toLocaleDateString('en-US', { weekday: 'long' });
+      const shouldTakeToday = treatment.schedule_days.length === 0 || treatment.schedule_days.includes(dayOfWeek);
+      
+      if (shouldTakeToday && scheduleDate >= startDate) {
+        schedule.push({
+          id: `${treatment.id}-${scheduleDate.toISOString().split('T')[0]}`,
+          treatmentId: treatment.id,
+          medication: treatment.medication,
+          dosage: treatment.dosage,
+          date: scheduleDate.toISOString().split('T')[0],
+          dayOfWeek: scheduleDate.toLocaleDateString('en-US', { weekday: 'short' }),
+          dayOfMonth: scheduleDate.getDate(),
+          isToday: i === 0,
+          status: 'pending' // pending, taken, missed
+        });
+      }
+    }
+  }
+  
+  // Sort by date
+  return schedule.sort((a, b) => a.date.localeCompare(b.date));
+};
+
 const PatientInterface = () => {
   const { id } = useParams<{ id: string }>();
   const [patientData, setPatientData] = useState<PatientWithTreatments | null>(null);
@@ -56,6 +94,7 @@ const PatientInterface = () => {
   const [aiMessage, setAiMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [medicationSchedule, setMedicationSchedule] = useState<any[]>([]);
 
   // Fetch patient data and treatments
   const fetchPatientData = async () => {
@@ -68,8 +107,9 @@ const PatientInterface = () => {
       
       if (data.success) {
         setPatientData(data.data);
-        // Set initial adherence from patient data if available
-        // This will be updated when we fetch the summary
+        // Generate medication schedule
+        const schedule = generateMedicationSchedule(data.data.treatments);
+        setMedicationSchedule(schedule);
       } else {
         throw new Error(data.message || "Failed to fetch patient data");
       }
@@ -105,7 +145,7 @@ const PatientInterface = () => {
   };
 
   // Log a dose as taken or missed
-  const logDose = async (medication: string, status: "Taken" | "Missed") => {
+  const logDose = async (medication: string, status: "Taken" | "Missed", scheduleItemId: string) => {
     if (!id) return;
     
     try {
@@ -129,6 +169,11 @@ const PatientInterface = () => {
         setRiskLevel(doseData.risk_label);
         setAiMessage(doseData.feedback_message);
         toast.success(`Medication marked as ${status.toLowerCase()}`);
+        
+        // Update the schedule item status
+        setMedicationSchedule(prev => prev.map(item => 
+          item.id === scheduleItemId ? { ...item, status: status.toLowerCase() } : item
+        ));
         
         // Refresh patient data to get updated treatments
         fetchPatientData();
@@ -193,6 +238,7 @@ const PatientInterface = () => {
         <div className="max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold text-foreground">Hello, {patient.name} 👋</h1>
           <p className="text-sm text-muted-foreground">Let's keep your health on track today</p>
+          <p className="text-xs text-muted-foreground mt-1">Patient ID: {patient.id}</p>
         </div>
       </motion.header>
 
@@ -236,14 +282,102 @@ const PatientInterface = () => {
           <AIMessageCard message={aiMessage} />
         )}
 
-        {/* Prescriptions */}
+        {/* Medication Schedule */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-foreground">Your Prescriptions</h2>
+            <h2 className="text-lg font-semibold text-foreground">Your Medication Schedule</h2>
             <Button variant="ghost" size="sm" onClick={handleRefresh}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
+          
+          {medicationSchedule.length === 0 ? (
+            <div className="bg-card rounded-xl p-6 border border-border shadow-sm text-center">
+              <Pill className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No medications scheduled for the next 7 days</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {medicationSchedule.map((scheduleItem) => (
+                <motion.div
+                  key={scheduleItem.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "bg-card rounded-xl p-5 border border-border shadow-sm",
+                    scheduleItem.isToday && "border-primary border-2"
+                  )}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg text-foreground">{scheduleItem.medication}</h3>
+                        {scheduleItem.isToday && (
+                          <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                            Today
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{scheduleItem.dosage}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-foreground">
+                        {scheduleItem.dayOfWeek} {scheduleItem.dayOfMonth}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {scheduleItem.date === new Date().toISOString().split('T')[0] ? 'Today' : scheduleItem.date}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {scheduleItem.status === 'pending' ? (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => logDose(scheduleItem.medication, "Taken", scheduleItem.id)}
+                          className="flex-1 bg-success hover:bg-success/90"
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Taken
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => logDose(scheduleItem.medication, "Missed", scheduleItem.id)}
+                          className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Missed
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg",
+                          scheduleItem.status === 'taken' ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                        )}>
+                          {scheduleItem.status === 'taken' ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                          <span className="font-medium">
+                            {scheduleItem.status === 'taken' ? 'Taken' : 'Missed'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Prescriptions */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Your Prescriptions</h2>
           
           {treatments.length === 0 ? (
             <div className="bg-card rounded-xl p-6 border border-border shadow-sm text-center">
@@ -284,26 +418,6 @@ const PatientInterface = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => logDose(treatment.medication, "Taken")}
-                      className="flex-1 bg-success hover:bg-success/90"
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Taken
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => logDose(treatment.medication, "Missed")}
-                      className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Missed
-                    </Button>
-                  </div>
                 </motion.div>
               ))}
             </div>
