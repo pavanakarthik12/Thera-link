@@ -31,7 +31,7 @@ const DoctorInterface = () => {
   const [addPatientOpen, setAddPatientOpen] = useState(false);
   const [addPrescriptionOpen, setAddPrescriptionOpen] = useState(false);
 
-  // Fetch patients (in a real app, this would come from the backend)
+  // Fetch patients from backend
   useEffect(() => {
     fetchPatients();
   }, []);
@@ -41,23 +41,21 @@ const DoctorInterface = () => {
       setLoading(true);
       setError(null);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fetch all patients from the backend
+      const response = await fetch("http://localhost:8000/api/patient/all");
+      const data = await response.json();
       
-      // Mock data
-      const mockPatients: Patient[] = [
-        { id: "1", name: "John Miller", age: 45, gender: "male", condition: "Hypertension", adherence_percent: 92, risk_label: "Low" },
-        { id: "2", name: "Sarah Johnson", age: 38, gender: "female", condition: "Diabetes Type 2", adherence_percent: 78, risk_label: "Medium" },
-        { id: "3", name: "Michael Chen", age: 62, gender: "male", condition: "Heart Disease", adherence_percent: 45, risk_label: "High" },
-        { id: "4", name: "Emily Davis", age: 29, gender: "female", condition: "Asthma", adherence_percent: 88, risk_label: "Low" },
-        { id: "5", name: "Robert Wilson", age: 55, gender: "male", condition: "Hypertension", adherence_percent: 62, risk_label: "Medium" },
-      ];
-      
-      setPatients(mockPatients);
+      if (data.success) {
+        setPatients(data.data.patients);
+      } else {
+        throw new Error(data.message || "Failed to fetch patients");
+      }
     } catch (err) {
       console.error("Error fetching patients:", err);
       setError("Failed to load patients");
       toast.error("Failed to load patients. Please try again.");
+      // Fallback to empty array
+      setPatients([]);
     } finally {
       setLoading(false);
     }
@@ -103,7 +101,7 @@ const DoctorInterface = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Patients</p>
-              <p className="text-3xl font-bold text-foreground mt-2">127</p>
+              <p className="text-3xl font-bold text-foreground mt-2">{patients.length}</p>
             </div>
             <div className="bg-primary/10 p-3 rounded-lg">
               <Users className="h-6 w-6 text-primary" />
@@ -121,7 +119,9 @@ const DoctorInterface = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">High-Risk Patients</p>
-              <p className="text-3xl font-bold text-foreground mt-2">8</p>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {patients.filter(p => p.risk_label?.toLowerCase() === 'high').length}
+              </p>
             </div>
             <div className="bg-destructive/10 p-3 rounded-lg">
               <AlertCircle className="h-6 w-6 text-destructive" />
@@ -139,7 +139,11 @@ const DoctorInterface = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Avg. Adherence</p>
-              <p className="text-3xl font-bold text-foreground mt-2">82%</p>
+              <p className="text-3xl font-bold text-foreground mt-2">
+                {patients.length > 0 
+                  ? Math.round(patients.reduce((sum, p) => sum + (p.adherence_percent || 0), 0) / patients.length) + '%' 
+                  : '0%'}
+              </p>
             </div>
             <div className="bg-success/10 p-3 rounded-lg">
               <TrendingUp className="h-6 w-6 text-success" />
@@ -279,8 +283,8 @@ const DoctorInterface = () => {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            // In a real app, this would navigate to a patient details page
-                            toast.info(`Viewing patient: ${patient.name}`);
+                            // Navigate to patient details page
+                            window.location.hash = `/patient/${patient.id}`;
                           }}
                           className="gap-2"
                         >

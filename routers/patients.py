@@ -60,6 +60,37 @@ async def create_patient(patient_data: PatientCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating patient: {str(e)}")
 
+@router.get("/all")
+async def get_all_patients():
+    """
+    Get all patients.
+    """
+    try:
+        # Fetch all patients from Supabase
+        response = supabase.table("patients").select("*").execute()
+        patients_data = response.data if response.data else []
+        
+        # Format the response
+        patients_list = []
+        for patient in patients_data:
+            patient_info = {
+                "id": patient["id"],
+                "name": patient["name"],
+                "age": patient["age"],
+                "gender": patient["gender"],
+                "condition": patient["condition"],
+                "adherence_percent": patient.get("adherence_percent", 0),
+                "risk_label": patient.get("risk_label", "Unknown")
+            }
+            patients_list.append(patient_info)
+        
+        return success_response(
+            data={"patients": patients_list},
+            message="Patients retrieved successfully"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching patients: {str(e)}")
+
 @router.get("/{patient_id}")
 async def get_patient_with_treatments(patient_id: str):
     """

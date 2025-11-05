@@ -17,7 +17,7 @@ interface Patient {
 }
 
 const getRiskBadgeClass = (risk: string) => {
-  switch (risk.toLowerCase()) {
+  switch (risk?.toLowerCase()) {
     case "low":
       return "bg-success/10 text-success";
     case "medium":
@@ -44,24 +44,21 @@ export const PatientTable = () => {
       setLoading(true);
       setError(null);
       
-      // In a real implementation, we would fetch all patients from the backend
-      // For now, we'll simulate this with a timeout to show loading state
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fetch patients from the backend
+      const response = await fetch("http://localhost:8000/api/patient/all");
+      const data = await response.json();
       
-      // Mock data with more realistic structure
-      const mockPatients: Patient[] = [
-        { id: "1", name: "John Miller", age: 45, gender: "male", condition: "Hypertension", adherence_percent: 92, risk_label: "Low" },
-        { id: "2", name: "Sarah Johnson", age: 38, gender: "female", condition: "Diabetes Type 2", adherence_percent: 78, risk_label: "Medium" },
-        { id: "3", name: "Michael Chen", age: 62, gender: "male", condition: "Heart Disease", adherence_percent: 45, risk_label: "High" },
-        { id: "4", name: "Emily Davis", age: 29, gender: "female", condition: "Asthma", adherence_percent: 88, risk_label: "Low" },
-        { id: "5", name: "Robert Wilson", age: 55, gender: "male", condition: "Hypertension", adherence_percent: 62, risk_label: "Medium" },
-      ];
-      
-      setPatients(mockPatients);
+      if (data.success) {
+        setPatients(data.data.patients);
+      } else {
+        throw new Error(data.message || "Failed to fetch patients");
+      }
     } catch (err) {
       console.error("Error fetching patients:", err);
       setError("Failed to load patients");
       toast.error("Failed to load patients. Please try again.");
+      // Fallback to empty array
+      setPatients([]);
     } finally {
       setLoading(false);
     }

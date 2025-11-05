@@ -65,28 +65,25 @@ export const AddPrescriptionModal = ({ open, onOpenChange }: AddPrescriptionModa
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      // In a real app, we would fetch patients from the backend
-      // For now, we'll use mock data
-      const mockPatients: Patient[] = [
-        { id: "1", name: "John Miller" },
-        { id: "2", name: "Sarah Johnson" },
-        { id: "3", name: "Michael Chen" },
-        { id: "4", name: "Emily Davis" },
-        { id: "5", name: "Robert Wilson" },
-      ];
-      setPatients(mockPatients);
+      // Fetch patients from the backend
+      const response = await fetch("http://localhost:8000/api/patient/all");
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform the patient data to match our interface
+        const patientList = data.data.patients.map((p: any) => ({
+          id: p.id,
+          name: p.name
+        }));
+        setPatients(patientList);
+      } else {
+        throw new Error(data.message || "Failed to fetch patients");
+      }
     } catch (error) {
       console.error("Error fetching patients:", error);
       toast.error("Failed to load patients");
-      // Use mock data as fallback
-      const mockPatients: Patient[] = [
-        { id: "1", name: "John Miller" },
-        { id: "2", name: "Sarah Johnson" },
-        { id: "3", name: "Michael Chen" },
-        { id: "4", name: "Emily Davis" },
-        { id: "5", name: "Robert Wilson" },
-      ];
-      setPatients(mockPatients);
+      // Fallback to empty array
+      setPatients([]);
     } finally {
       setLoading(false);
     }
