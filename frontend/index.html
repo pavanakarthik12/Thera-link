@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraLink - Test Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        input, select, button {
+            padding: 10px;
+            margin: 5px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+        .success {
+            border-left: 4px solid #27ae60;
+        }
+        .error {
+            border-left: 4px solid #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <h1>TheraLink - Test Interface</h1>
+    
+    <!-- Health Check -->
+    <div class="container">
+        <h2>Health Check</h2>
+        <button onclick="healthCheck()">Check Backend Health</button>
+        <div id="healthResult" class="result"></div>
+    </div>
+    
+    <!-- System Test -->
+    <div class="container">
+        <h2>System Test</h2>
+        <button onclick="testSystem()">Test All Systems</button>
+        <div id="testResult" class="result"></div>
+    </div>
+    
+    <!-- Create Patient -->
+    <div class="container">
+        <h2>Create New Patient</h2>
+        <input type="text" id="patientName" placeholder="Patient Name">
+        <input type="number" id="patientAge" placeholder="Age">
+        <select id="patientGender">
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+        </select>
+        <input type="text" id="patientCondition" placeholder="Medical Condition">
+        <button onclick="createPatient()">Create Patient</button>
+        <div id="patientResult" class="result"></div>
+    </div>
+    
+    <!-- Log Dose -->
+    <div class="container">
+        <h2>Log Medication Dose</h2>
+        <input type="text" id="dosePatientId" placeholder="Patient ID">
+        <input type="text" id="doseMedication" placeholder="Medication Name">
+        <select id="doseStatus">
+            <option value="">Select Status</option>
+            <option value="Taken">Taken</option>
+            <option value="Missed">Missed</option>
+            <option value="Inconsistent">Inconsistent</option>
+        </select>
+        <button onclick="logDose()">Log Dose</button>
+        <div id="doseResult" class="result"></div>
+    </div>
+    
+    <!-- Get Summary -->
+    <div class="container">
+        <h2>Get Patient Summary</h2>
+        <input type="text" id="summaryPatientId" placeholder="Patient ID">
+        <button onclick="getSummary()">Get Summary</button>
+        <div id="summaryResult" class="result"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8000';
+        
+        function displayResult(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+            element.className = `result ${isSuccess ? 'success' : 'error'}`;
+        }
+        
+        async function healthCheck() {
+            try {
+                const response = await fetch(`${BASE_URL}/health`);
+                const data = await response.json();
+                displayResult('healthResult', data, response.ok);
+            } catch (error) {
+                displayResult('healthResult', {error: error.message}, false);
+            }
+        }
+        
+        async function testSystem() {
+            try {
+                const response = await fetch(`${BASE_URL}/test`);
+                const data = await response.json();
+                displayResult('testResult', data, response.ok);
+            } catch (error) {
+                displayResult('testResult', {error: error.message}, false);
+            }
+        }
+        
+        async function createPatient() {
+            const patientData = {
+                name: document.getElementById('patientName').value,
+                age: parseInt(document.getElementById('patientAge').value),
+                gender: document.getElementById('patientGender').value,
+                condition: document.getElementById('patientCondition').value
+            };
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/patient/new`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(patientData)
+                });
+                
+                const data = await response.json();
+                displayResult('patientResult', data, response.ok);
+                
+                // If successful, save the patient ID for convenience
+                if (data.data && data.data.id) {
+                    document.getElementById('dosePatientId').value = data.data.id;
+                    document.getElementById('summaryPatientId').value = data.data.id;
+                }
+            } catch (error) {
+                displayResult('patientResult', {error: error.message}, false);
+            }
+        }
+        
+        async function logDose() {
+            const doseData = {
+                patient_id: document.getElementById('dosePatientId').value,
+                medication: document.getElementById('doseMedication').value,
+                status: document.getElementById('doseStatus').value
+            };
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/log_dose`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(doseData)
+                });
+                
+                const data = await response.json();
+                displayResult('doseResult', data, response.ok);
+            } catch (error) {
+                displayResult('doseResult', {error: error.message}, false);
+            }
+        }
+        
+        async function getSummary() {
+            const patientId = document.getElementById('summaryPatientId').value;
+            
+            if (!patientId) {
+                displayResult('summaryResult', {error: "Please enter a patient ID"}, false);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/summary/${patientId}`);
+                const data = await response.json();
+                displayResult('summaryResult', data, response.ok);
+            } catch (error) {
+                displayResult('summaryResult', {error: error.message}, false);
+            }
+        }
+    </script>
+</body>
+</html>
