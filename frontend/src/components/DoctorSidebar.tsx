@@ -11,6 +11,10 @@ const navItems = [
 ];
 
 export const DoctorSidebar = () => {
+  // In a real application, this would come from user authentication context
+  const doctorName = "Dr. Smith"; // This would be dynamic in a real app
+  const specialty = "Healthcare Provider"; // This would be dynamic in a real app
+
   return (
     <aside className="w-64 bg-card border-r border-border min-h-screen flex flex-col">
       <div className="p-6 border-b border-border">
@@ -46,11 +50,13 @@ export const DoctorSidebar = () => {
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-sm font-semibold text-primary">DS</span>
+            <span className="text-sm font-semibold text-primary">
+              {doctorName.split(" ").map(n => n[0]).join("")}
+            </span>
           </div>
           <div>
-            <p className="text-sm font-medium">Dr. Sarah</p>
-            <p className="text-xs text-muted-foreground">Cardiologist</p>
+            <p className="text-sm font-medium">{doctorName}</p>
+            <p className="text-xs text-muted-foreground">{specialty}</p>
           </div>
         </div>
       </div>

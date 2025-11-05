@@ -60,6 +60,62 @@ async def create_patient(patient_data: PatientCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating patient: {str(e)}")
 
+@router.delete("/{patient_id}")
+async def delete_patient(patient_id: str):
+    """
+    Delete a patient record by ID.
+    """
+    try:
+        # First delete all treatments associated with this patient
+        supabase.table("treatments").delete().eq("patient_id", patient_id).execute()
+        
+        # Then delete all dose logs associated with this patient
+        supabase.table("dose_logs").delete().eq("patient_id", patient_id).execute()
+        
+        # Finally delete the patient record
+        response = supabase.table("patients").delete().eq("id", patient_id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Patient not found")
+            
+        return success_response(
+            data={"id": patient_id},
+            message="Patient deleted successfully"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting patient: {str(e)}")
+
+@router.delete("/name/{patient_name}")
+async def delete_patient_by_name(patient_name: str):
+    """
+    Delete patient records by name (useful for removing test patients).
+    """
+    try:
+        # First get all patients with this name
+        patient_response = supabase.table("patients").select("id").eq("name", patient_name).execute()
+        patients_to_delete = patient_response.data if patient_response.data else []
+        
+        deleted_count = 0
+        for patient in patients_to_delete:
+            patient_id = patient["id"]
+            
+            # Delete all treatments associated with this patient
+            supabase.table("treatments").delete().eq("patient_id", patient_id).execute()
+            
+            # Delete all dose logs associated with this patient
+            supabase.table("dose_logs").delete().eq("patient_id", patient_id).execute()
+            
+            # Delete the patient record
+            supabase.table("patients").delete().eq("id", patient_id).execute()
+            deleted_count += 1
+            
+        return success_response(
+            data={"deleted_count": deleted_count},
+            message=f"Successfully deleted {deleted_count} patient(s) named {patient_name}"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting patients: {str(e)}")
+
 @router.get("/all")
 async def get_all_patients():
     """
