@@ -44,43 +44,22 @@ async def log_dose(dose_data: DoseLogCreate):
         # Predict risk using ML model
         risk_label = predict_risk(adherence_percent, missed_doses)
         
-        # Update patient record with new metrics
-        supabase.table("patients").update({
-            "adherence_percent": adherence_percent,
-            "risk_label": risk_label
-        }).eq("id", dose_data.patient_id).execute()
-        
         # Generate AI feedback
         feedback_message = generate_ai_feedback(adherence_percent, risk_label)
         
-        # Try to save feedback to database with different possible column structures
-        feedback_data = {
-            "patient_id": dose_data.patient_id,
-            "feedback": feedback_message
+        # Update patient record with new metrics (only columns that exist)
+        update_data = {
+            "adherence_percent": adherence_percent,
+            "risk_label": risk_label
         }
         
-        try:
-            feedback_response = supabase.table("ai_feedback").insert(feedback_data).execute()
-            feedback_record = feedback_response.data[0] if feedback_response.data else None
-        except Exception as feedback_error:
-            # If the above fails, try without the patient_id field
-            feedback_data_simple = {
-                "feedback": feedback_message
-            }
-            try:
-                feedback_response = supabase.table("ai_feedback").insert(feedback_data_simple).execute()
-                feedback_record = feedback_response.data[0] if feedback_response.data else None
-            except Exception as simple_feedback_error:
-                # If both fail, we'll continue without saving feedback
-                feedback_record = None
-                feedback_message = f"Note: Feedback not saved due to table structure issues. Message: {feedback_message}"
+        supabase.table("patients").update(update_data).eq("id", dose_data.patient_id).execute()
         
         return success_response(
             data={
                 "dose_log_id": dose_log["id"],
                 "adherence_percent": adherence_percent,
                 "risk_label": risk_label,
-                "feedback_id": feedback_record["id"] if feedback_record else None,
                 "feedback_message": feedback_message
             },
             message="Dose logged successfully"

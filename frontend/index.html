@@ -126,6 +126,34 @@
             element.className = `result ${isSuccess ? 'success' : 'error'}`;
         }
         
+        // Enhanced display for patient summary
+        function displayPatientSummary(data) {
+            const element = document.getElementById('summaryResult');
+            if (!data.success) {
+                element.textContent = JSON.stringify(data, null, 2);
+                element.className = 'result error';
+                return;
+            }
+            
+            const patientData = data.data;
+            element.innerHTML = `
+                <div style="padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+                    <h3 style="margin-top: 0; color: #2c3e50;">${patientData.name}</h3>
+                    <p><strong>Adherence:</strong> ${patientData.adherence}%</p>
+                    <p><strong>Risk Level:</strong> 
+                        <span style="padding: 3px 8px; border-radius: 4px; color: white; 
+                        ${patientData.risk_label === 'Low' ? 'background-color: #4CAF50;' : 
+                          patientData.risk_label === 'Medium' ? 'background-color: #FFC107; color: black;' : 
+                          'background-color: #E53935;'}">
+                            ${patientData.risk_label}
+                        </span>
+                    </p>
+                    <p><strong>AI Feedback:</strong> ${patientData.feedback}</p>
+                </div>
+            `;
+            element.className = 'result success';
+        }
+        
         function displayPatientLink(patientId) {
             const linkContainer = document.getElementById('patientLink');
             const linkElement = document.getElementById('patientLinkUrl');
@@ -227,7 +255,7 @@
             try {
                 const response = await fetch(`${BASE_URL}/api/summary/${patientId}`);
                 const data = await response.json();
-                displayResult('summaryResult', data, response.ok);
+                displayPatientSummary(data); // Use enhanced display
             } catch (error) {
                 displayResult('summaryResult', {error: error.message}, false);
             }

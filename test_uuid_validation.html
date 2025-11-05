@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test UUID Validation</title>
+</head>
+<body>
+    <h1>Test UUID Validation</h1>
+    <script>
+        // Validate UUID format
+        function isValidUUID(uuid) {
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            return uuidRegex.test(uuid);
+        }
+        
+        // Test cases
+        const testCases = [
+            "patient.html",  // Should be false
+            "1a549c0f-e489-44d1-a29e-67067ed1742b",  // Should be true (valid UUID)
+            "not-a-uuid",  // Should be false
+            "123",  // Should be false
+            ""  // Should be false
+        ];
+        
+        testCases.forEach(testCase => {
+            console.log(`"${testCase}" is valid UUID: ${isValidUUID(testCase)}`);
+            document.body.innerHTML += `<p>"${testCase}" is valid UUID: ${isValidUUID(testCase)}</p>`;
+        });
+    </script>
+</body>
+</html>
