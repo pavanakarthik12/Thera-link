@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TheraLink - Patient Dashboard</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f7f9fc; 
+      color: #222; 
+      margin: 20px; 
+    }
+    .card { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+      margin-bottom: 20px; 
+    }
+    button { 
+      margin: 5px; 
+      padding: 6px 10px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      border: none;
+    }
+    .taken { 
+      background: #4CAF50; 
+      color: white; 
+    }
+    .missed { 
+      background: #E53935; 
+      color: white; 
+    }
+    .refresh { 
+      background: #2196F3; 
+      color: white; 
+      padding: 8px 12px; 
+    }
+    input[type="text"] {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+    .prescription-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .prescription-item:last-child {
+      border-bottom: none;
+    }
+    .risk-low { color: #4CAF50; }
+    .risk-medium { color: #FFC107; }
+    .risk-high { color: #E53935; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>🩺 TheraLink Patient Dashboard</h2>
+    <p>
+      <b>Enter Patient ID:</b> 
+      <input type="text" id="patientId" placeholder="e.g., a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8"> 
+      <button onclick="loadPatient()">Load Data</button>
+    </p>
+    <div id="patientInfo"></div>
+  </div>
+
+  <div class="card" id="prescriptionsCard" style="display:none;">
+    <h3>💊 Prescriptions</h3>
+    <div id="prescriptions"></div>
+  </div>
+
+  <div class="card" id="summaryCard" style="display:none;">
+    <h3>📊 Summary</h3>
+    <p id="adherence"></p>
+    <p id="risk"></p>
+    <p id="feedback"></p>
+    <button class="refresh" onclick="loadSummary()">🔄 Refresh Summary</button>
+  </div>
+
+  <script>
+    const BASE_URL = "http://localhost:8000"; // Change if deployed
+
+    async function loadPatient() {
+      const id = document.getElementById("patientId").value.trim();
+      if (!id) return alert("Enter patient ID");
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/patient/${id}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to load patient data");
+        }
+
+        document.getElementById("prescriptionsCard").style.display = "block";
+        document.getElementById("summaryCard").style.display = "block";
+
+        document.getElementById("patientInfo").innerHTML = `
+          <p><b>👤 Name:</b> ${data.data.patient.name}</p>
+          <p><b>💊 Condition:</b> ${data.data.patient.condition}</p>
+          <p><b>Age:</b> ${data.data.patient.age}</p>
+        `;
+
+        const prescriptionsDiv = document.getElementById("prescriptions");
+        prescriptionsDiv.innerHTML = "";
+        
+        if (data.data.treatments.length === 0) {
+          prescriptionsDiv.innerHTML = "<p>No prescriptions found.</p>";
+        } else {
+          data.data.treatments.forEach(t => {
+            const div = document.createElement("div");
+            div.className = "prescription-item";
+            div.innerHTML = `
+              <p><b>${t.medication}</b> (${t.dosage}, ${t.frequency}) 
+              <button class="taken" onclick="logDose('${id}','${t.medication}','Taken')">✅ Taken</button>
+              <button class="missed" onclick="logDose('${id}','${t.medication}','Missed')">❌ Missed</button></p>
+            `;
+            prescriptionsDiv.appendChild(div);
+          });
+        }
+
+        loadSummary();
+      } catch (error) {
+        alert("Error loading patient data: " + error.message);
+        console.error(error);
+      }
+    }
+
+    async function logDose(id, med, status) {
+      try {
+        const res = await fetch(`${BASE_URL}/api/log_dose`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ patient_id: id, medication: med, status: status })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert("Dose logged successfully!");
+          loadSummary();
+        } else {
+          throw new Error(data.detail || "Error logging dose.");
+        }
+      } catch (error) {
+        alert("Error logging dose: " + error.message);
+        console.error(error);
+      }
+    }
+
+    async function loadSummary() {
+      const id = document.getElementById("patientId").value.trim();
+      if (!id) return;
+      
+      try {
+        const res = await fetch(`${BASE_URL}/api/summary/${id}`);
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to load summary");
+        }
+
+        document.getElementById("adherence").innerHTML = `<b>Adherence:</b> ${data.data.adherence}%`;
+        
+        // Display risk with appropriate color
+        let riskClass = "";
+        if (data.data.risk_label === "Low") riskClass = "risk-low";
+        else if (data.data.risk_label === "Medium") riskClass = "risk-medium";
+        else if (data.data.risk_label === "High") riskClass = "risk-high";
+        
+        document.getElementById("risk").innerHTML = `<b>Risk:</b> <span class="${riskClass}">${data.data.risk_label}</span>`;
+        document.getElementById("feedback").innerHTML = `<b>💬 Message:</b> ${data.data.feedback}`;
+      } catch (error) {
+        alert("Error loading summary: " + error.message);
+        console.error(error);
+      }
+    }
+
+    // TODO: Integrate Web NFC here to auto-fetch patient ID and call loadPatient()
+  </script>
+</body>
+</html>

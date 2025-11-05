@@ -9,7 +9,8 @@ A FastAPI backend for medication adherence tracking with AI feedback.
 - Medication dose logging
 - AI-powered motivational feedback
 - Risk prediction using ML
-- Simple HTML frontend for testing
+- Doctor dashboard (HTML test interface)
+- Patient dashboard (for patients to track their medications)
 
 ## Setup
 
@@ -36,41 +37,24 @@ A FastAPI backend for medication adherence tracking with AI feedback.
 | `/health`            | GET    | Health check                             |
 | `/test`              | GET    | Test all systems                         |
 | `/api/patient/new`   | POST   | Create new patient                       |
+| `/api/patient/{id}`  | GET    | Get patient details and prescriptions    |
 | `/api/treatment/new` | POST   | Add prescription                         |
 | `/api/log_dose`      | POST   | Add medication log                       |
 | `/api/summary/{id}`  | GET    | Fetch adherence %, risk label, and feedback |
 
 ## Frontend
 
-Open `frontend/index.html` in your browser to test the API endpoints.
+1. Doctor Dashboard (for testing API endpoints):
+   Open `frontend/index.html` in your browser
 
-## Testing with curl
+2. Patient Dashboard (for patients to track medications):
+   Open `frontend/patient.html` in your browser
 
+## Testing
+
+Run the test script to create sample data:
 ```bash
-# Health check
-curl http://127.0.0.1:8000/health
-
-# Create new patient
-curl -X POST http://127.0.0.1:8000/api/patient/new \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John Doe","age":30,"gender":"Male","condition":"Hypertension"}'
-
-# Log a dose
-curl -X POST http://127.0.0.1:8000/api/log_dose \
-  -H "Content-Type: application/json" \
-  -d '{"patient_id":"PATIENT_UUID","medication":"Lisinopril","status":"Taken"}'
-
-# Fetch summary
-curl http://127.0.0.1:8000/api/summary/PATIENT_UUID
+python test_patient_dashboard.py
 ```
 
-## Note on Supabase Tables
-
-The application expects the following tables to exist in your Supabase database:
-
-1. `patients` - with columns for patient information
-2. `treatments` - for prescription information
-3. `dose_logs` - for medication dose tracking
-4. `ai_feedback` - for storing AI-generated feedback
-
-If you encounter issues with table structures, you may need to adjust the column names in the code to match your existing table schema.
+This will create a sample patient with prescriptions that you can use to test the patient dashboard.
