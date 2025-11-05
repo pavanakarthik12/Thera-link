@@ -247,10 +247,24 @@
           data.data.treatments.forEach(t => {
             const div = document.createElement("div");
             div.className = "prescription-item";
+            
+            // Create schedule days display
+            let scheduleInfo = "";
+            if (t.schedule_days && t.schedule_days.length > 0) {
+              scheduleInfo = `<p><strong>Scheduled Days:</strong> ${t.schedule_days.join(", ")}</p>`;
+            }
+            
+            // Create today's date for default logging
+            const today = new Date().toISOString().split('T')[0];
+            
             div.innerHTML = `
-              <p><b>${t.medication}</b> (${t.dosage}, ${t.frequency}) 
-              <button class="taken" onclick="logDose('${patientId}','${t.medication}','Taken')">✅ Taken</button>
-              <button class="missed" onclick="logDose('${patientId}','${t.medication}','Missed')">❌ Missed</button></p>
+              <p><b>${t.medication}</b> (${t.dosage}, ${t.frequency})</p>
+              ${scheduleInfo}
+              <div style="margin: 10px 0;">
+                <label>Date: <input type="date" id="date-${t.id}" value="${today}" style="margin-right: 10px;"></label>
+                <button class="taken" onclick="logDose('${patientId}','${t.medication}','Taken', '${t.id}')">✅ Taken</button>
+                <button class="missed" onclick="logDose('${patientId}','${t.medication}','Missed', '${t.id}')">❌ Missed</button>
+              </div>
             `;
             prescriptionsDiv.appendChild(div);
           });
@@ -263,20 +277,29 @@
       }
     }
 
-    async function logDose(patientId, med, status) {
+    async function logDose(patientId, med, status, treatmentId) {
       try {
-        showMessage(`Logging dose as ${status}...`, true);
+        // Get the date from the input field for this treatment
+        const dateInput = document.getElementById(`date-${treatmentId}`);
+        const date = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+        
+        showMessage(`Logging dose as ${status} for ${date}...`, true);
         
         const res = await fetch(`${BASE_URL}/api/log_dose`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ patient_id: patientId, medication: med, status: status })
+          body: JSON.stringify({ 
+            patient_id: patientId, 
+            medication: med, 
+            status: status,
+            date: date
+          })
         });
         
         const data = await res.json();
         
         if (res.ok) {
-          showMessage(`Dose logged successfully as ${status}!`, true);
+          showMessage(`Dose logged successfully as ${status} for ${date}!`, true);
           loadSummary(patientId);
         } else {
           throw new Error(data.detail || "Error logging dose.");

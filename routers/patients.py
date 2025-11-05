@@ -73,7 +73,7 @@ async def get_patient_with_treatments(patient_id: str):
         if not patient_data:
             raise HTTPException(status_code=404, detail="Patient not found")
         
-        # Fetch treatments for this patient
+        # Fetch treatments for this patient using the new endpoint
         treatments_response = supabase.table("treatments").select("*").eq("patient_id", patient_id).execute()
         treatments_data = treatments_response.data if treatments_response.data else []
         
@@ -86,17 +86,29 @@ async def get_patient_with_treatments(patient_id: str):
             "condition": patient_data["condition"]
         }
         
-        treatments_list = [
-            {
+        # Process treatments to extract schedule information
+        treatments_list = []
+        for treatment in treatments_data:
+            # Extract schedule information from frequency field
+            schedule_days = []
+            display_frequency = treatment["frequency"]
+            if " (Schedule: " in treatment["frequency"]:
+                freq_parts = treatment["frequency"].split(" (Schedule: ")
+                display_frequency = freq_parts[0]
+                schedule_str = freq_parts[1].rstrip(")")
+                schedule_days = schedule_str.split(", ") if schedule_str else []
+            
+            treatment_info = {
                 "id": treatment["id"],
                 "patient_id": treatment["patient_id"],
                 "medication": treatment["medication"],
                 "dosage": treatment["dosage"],
-                "frequency": treatment["frequency"],
-                "start_date": treatment["start_date"]
+                "frequency": display_frequency,
+                "start_date": treatment["start_date"],
+                "schedule_days": schedule_days
             }
-            for treatment in treatments_data
-        ]
+            
+            treatments_list.append(treatment_info)
         
         return success_response(
             data={

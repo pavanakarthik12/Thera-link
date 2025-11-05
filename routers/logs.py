@@ -6,6 +6,7 @@ from utils.response import success_response, error_response
 from utils.adherence import calculate_adherence, count_missed_doses
 from ai_model import predict_risk, generate_ai_feedback
 import uuid
+from datetime import datetime
 
 router = APIRouter(prefix="/api", tags=["logs"])
 
@@ -13,6 +14,7 @@ class DoseLogCreate(BaseModel):
     patient_id: str
     medication: str
     status: str  # Taken, Missed, Inconsistent
+    date: Optional[str] = None  # ISO format date, defaults to today if not provided
 
 @router.post("/log_dose")
 async def log_dose(dose_data: DoseLogCreate):
@@ -20,11 +22,15 @@ async def log_dose(dose_data: DoseLogCreate):
     Log a medication dose and update patient adherence metrics.
     """
     try:
+        # Use provided date or default to today
+        log_date = dose_data.date or datetime.now().strftime("%Y-%m-%d")
+        
         # Insert dose log into Supabase
         response = supabase.table("dose_logs").insert({
             "patient_id": dose_data.patient_id,
             "medication": dose_data.medication,
-            "status": dose_data.status
+            "status": dose_data.status,
+            "date": log_date  # Include date in log
         }).execute()
         
         # Get the inserted dose log

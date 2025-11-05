@@ -104,6 +104,21 @@
         <input type="text" id="dosage" placeholder="Dosage (e.g., 500mg)">
         <input type="text" id="frequency" placeholder="Frequency (e.g., 2x daily)">
         <input type="text" id="startDate" placeholder="Start Date (YYYY-MM-DD)">
+        
+        <!-- Schedule Days Selection -->
+        <div style="margin: 10px 0;">
+            <label><strong>Schedule Days:</strong></label>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                <label><input type="checkbox" name="scheduleDays" value="Monday"> Monday</label>
+                <label><input type="checkbox" name="scheduleDays" value="Tuesday"> Tuesday</label>
+                <label><input type="checkbox" name="scheduleDays" value="Wednesday"> Wednesday</label>
+                <label><input type="checkbox" name="scheduleDays" value="Thursday"> Thursday</label>
+                <label><input type="checkbox" name="scheduleDays" value="Friday"> Friday</label>
+                <label><input type="checkbox" name="scheduleDays" value="Saturday"> Saturday</label>
+                <label><input type="checkbox" name="scheduleDays" value="Sunday"> Sunday</label>
+            </div>
+        </div>
+        
         <button onclick="addTreatment()">Add Prescription</button>
         <div id="treatmentResult" class="result"></div>
     </div>
@@ -136,6 +151,27 @@
             }
             
             const patientData = data.data;
+            let missedDaysInfo = "";
+            
+            // Process missed days information
+            if (patientData.missed_days && Object.keys(patientData.missed_days).length > 0) {
+                missedDaysInfo = "<h4>Missed Days Information:</h4><ul>";
+                for (const [medication, info] of Object.entries(patientData.missed_days)) {
+                    if (info.scheduled_days && info.scheduled_days.length > 0) {
+                        missedDaysInfo += `<li><strong>${medication}</strong>:`;
+                        missedDaysInfo += `<br>Scheduled Days: ${info.scheduled_days.join(", ")}`;
+                        
+                        if (info.missed_days && info.missed_days.length > 0) {
+                            missedDaysInfo += `<br>Missed Days: ${info.missed_days.map(m => m.date).join(", ")}`;
+                        } else {
+                            missedDaysInfo += "<br>No missed days recorded";
+                        }
+                        missedDaysInfo += "</li>";
+                    }
+                }
+                missedDaysInfo += "</ul>";
+            }
+            
             element.innerHTML = `
                 <div style="padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
                     <h3 style="margin-top: 0; color: #2c3e50;">${patientData.name}</h3>
@@ -149,6 +185,7 @@
                         </span>
                     </p>
                     <p><strong>AI Feedback:</strong> ${patientData.feedback}</p>
+                    ${missedDaysInfo}
                 </div>
             `;
             element.className = 'result success';
@@ -214,12 +251,17 @@
         }
         
         async function addTreatment() {
+            // Get selected schedule days
+            const scheduleDaysCheckboxes = document.querySelectorAll('input[name="scheduleDays"]:checked');
+            const scheduleDays = Array.from(scheduleDaysCheckboxes).map(cb => cb.value);
+            
             const treatmentData = {
                 patient_id: document.getElementById('treatmentPatientId').value,
                 medication: document.getElementById('medication').value,
                 dosage: document.getElementById('dosage').value,
                 frequency: document.getElementById('frequency').value,
-                start_date: document.getElementById('startDate').value
+                start_date: document.getElementById('startDate').value,
+                schedule_days: scheduleDays  // New field
             };
             
             // Validate date format
