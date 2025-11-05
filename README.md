@@ -9,7 +9,7 @@ A FastAPI backend for medication adherence tracking with AI feedback.
 - Medication dose logging
 - AI-powered motivational feedback
 - Risk prediction using ML
-- Doctor dashboard (HTML test interface)
+- Doctor dashboard (for medical professionals)
 - Patient dashboard (for patients to track their medications)
 
 ## Setup
@@ -44,17 +44,47 @@ A FastAPI backend for medication adherence tracking with AI feedback.
 
 ## Frontend
 
-1. Doctor Dashboard (for testing API endpoints):
+1. Doctor Dashboard (for medical professionals):
    Open `frontend/index.html` in your browser
 
 2. Patient Dashboard (for patients to track medications):
-   Open `frontend/patient.html` in your browser
+   Open `frontend/patient.html?id=PATIENT_ID` in your browser
+   Or use the patient link generated in the doctor dashboard
 
 ## Testing
 
-Run the test script to create sample data:
+Run the test script to create sample data and test the complete flow:
 ```bash
-python test_patient_dashboard.py
+python test_complete_flow.py
 ```
 
-This will create a sample patient with prescriptions that you can use to test the patient dashboard.
+This will create a sample patient with prescriptions and demonstrate the complete workflow between doctor and patient dashboards.
+
+## Architecture
+
+### Roles and Permissions
+
+| Role    | Permissions                    | Description                                  |
+|---------|--------------------------------|----------------------------------------------|
+| Doctor  | Add patients, assign medications | Register new patients, assign prescriptions, view progress |
+| Patient | Log dose adherence             | View prescriptions, mark doses as Taken/Missed |
+
+### Data Flow
+
+1. **Doctor Registration Flow**
+   - Doctor creates a new patient via `POST /api/patient/new`
+   - Doctor assigns medications via `POST /api/treatment/new`
+   - Backend saves both to Supabase
+   - After creation, the backend provides a unique patient link
+
+2. **Patient Update Flow**
+   - Patient opens their unique link
+   - The page calls `GET /api/patient/{id}` for info + prescriptions
+   - Each medication has "Taken" | "Missed" buttons
+   - When patient clicks a button: `POST /api/log_dose`
+   - Backend logs the dose, recalculates adherence %, updates patients.adherence_percent, predicts risk_label, and stores Gemini feedback
+
+3. **Doctor Monitoring Flow**
+   - Doctor dashboard fetches `GET /api/summary/{patient_id}`
+   - Shows patient name, age, condition, list of medications, adherence %, risk level, and latest AI motivational feedback
+   - Doctor cannot modify doses; they only view them
