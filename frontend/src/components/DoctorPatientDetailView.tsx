@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, CheckCircle, XCircle, Clock, Pill, Copy } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle, XCircle, Clock, Pill, Copy, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -134,6 +134,14 @@ const DoctorPatientDetailView = () => {
     toast.success("Data refreshed successfully");
   };
 
+  // Copy patient NFC link to clipboard
+  const copyPatientLink = () => {
+    if (!id) return;
+    const url = `http://localhost:8000/patient/${id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Patient NFC link copied to clipboard");
+  };
+
   // Initialize data on component mount
   useEffect(() => {
     if (id) {
@@ -219,6 +227,7 @@ const DoctorPatientDetailView = () => {
   }
 
   const { patient, treatments } = patientData;
+  const patientUrl = `http://localhost:8000/patient/${patient.id}`;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -237,6 +246,28 @@ const DoctorPatientDetailView = () => {
             <h1 className="text-2xl font-bold text-foreground">{patient.name}</h1>
             <p className="text-sm text-muted-foreground">Patient Details</p>
           </div>
+        </div>
+        
+        {/* NFC Link Section */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" />
+              <span className="font-medium text-foreground">Patient NFC Link</span>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={copyPatientLink}
+              className="gap-2"
+            >
+              <Copy className="h-4 w-4" />
+              Copy Link
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 break-all">
+            {patientUrl}
+          </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, AlertCircle, TrendingUp, Plus, FileText, Eye } from "lucide-react";
+import { Users, AlertCircle, TrendingUp, Plus, FileText, Eye, Copy, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -74,6 +74,13 @@ const DoctorInterface = () => {
       default:
         return "bg-muted text-muted-foreground";
     }
+  };
+
+  // Copy patient NFC link to clipboard
+  const copyPatientLink = (patientId: string) => {
+    const url = `http://localhost:8000/patient/${patientId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Patient NFC link copied to clipboard");
   };
 
   // Calculate statistics based on real patient data
@@ -233,7 +240,7 @@ const DoctorInterface = () => {
                       Risk Level
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Action
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -288,15 +295,26 @@ const DoctorInterface = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/doctor/patient/${patient.id}`)}
-                          className="gap-2"
-                        >
-                          <Eye className="h-4 w-4" />
-                          View
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/doctor/patient/${patient.id}`)}
+                            className="gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyPatientLink(patient.id)}
+                            className="gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            NFC Link
+                          </Button>
+                        </div>
                       </td>
                     </motion.tr>
                   ))}

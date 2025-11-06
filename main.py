@@ -88,6 +88,19 @@ async def startup_event():
     except FileNotFoundError:
         create_and_save_risk_model()
 
+# Serve static files for NFC tag scanning
+@app.get("/")
+async def root():
+    """
+    Root endpoint with NFC information.
+    """
+    return {
+        "message": "TheraLink NFC System Running",
+        "nfc_instructions": "Use NFC tags to access patient dashboards",
+        "patient_url_format": "http://localhost:8000/patient/{patient_id}",
+        "docs": "/docs"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
